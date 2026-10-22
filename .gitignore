@@ -2,13 +2,16 @@
 config.json
 *.key
 
-# Build outputs
+# Build & Release outputs
 bin/
 obj/
 publish/
+dist/
+releases-ready/
 *.exe
 *.dll
 *.pdb
+*.zip
 
 # Logs & Temp files
 *.log

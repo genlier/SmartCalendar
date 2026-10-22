@@ -2,50 +2,66 @@ name: Build & Release
 
 on:
   push:
-    branches: [ master, main ]
-    tags: [ 'v*' ]
-  pull_request:
-    branches: [ master, main ]
+    tags:
+      - 'v*'
   workflow_dispatch:
 
+permissions:
+  contents: write
+
 jobs:
-  build:
+  release:
+    name: Build and Publish Release
     runs-on: windows-latest
 
     steps:
-    - name: Checkout Repository
+    - name: Checkout Source Code
       uses: actions/checkout@v4
 
-    - name: Setup .NET
+    - name: Setup .NET SDK
       uses: actions/setup-dotnet@v4
       with:
         dotnet-version: '9.0.x'
 
-    - name: Build Standalone Single-File EXE
+    - name: Build Standalone Version (Zero Dependencies)
+      shell: pwsh
       run: |
         dotnet publish src/SmartCalendar.csproj -c Release -r win-x64 -p:PublishSingleFile=true -p:EnableCompressionInSingleFile=true --self-contained true -o dist/standalone
-        cp config.example.json dist/standalone/config.json
-        rm -Force dist/standalone/*.pdb
+        Copy-Item config.example.json dist/standalone/config.json
+        Remove-Item -Force dist/standalone/*.pdb -ErrorAction SilentlyContinue
+        Compress-Archive -Path dist/standalone/* -DestinationPath dist/SmartCalendar-v${{ github.ref_name }}-win-x64-standalone.zip
 
-    - name: Build Lightweight Single-File EXE
+    - name: Build Lightweight Version (180KB, Requires .NET 9)
+      shell: pwsh
       run: |
         dotnet publish src/SmartCalendar.csproj -c Release -r win-x64 -p:PublishSingleFile=true --self-contained false -o dist/light
-        cp config.example.json dist/light/config.json
-        rm -Force dist/light/*.pdb
+        Copy-Item config.example.json dist/light/config.json
+        Remove-Item -Force dist/light/*.pdb -ErrorAction SilentlyContinue
+        Compress-Archive -Path dist/light/* -DestinationPath dist/SmartCalendar-v${{ github.ref_name }}-win-x64-light.zip
 
-    - name: Upload Artifacts
-      uses: actions/upload-artifact@v4
-      with:
-        name: SmartCalendar-Build
-        path: dist/
-
-    - name: Create Release
-      if: startsWith(github.ref, 'refs/tags/')
+    - name: Publish GitHub Release
       uses: softprops/action-gh-release@v2
       with:
+        name: SmartCalendar ${{ github.ref_name }}
+        draft: false
+        prerelease: false
+        generate_release_notes: true
+        body: |
+          ### 📅 SmartCalendar ${{ github.ref_name }} 发布日志
+
+          智能入历是一个原生的 Windows 轻量后台应用：复制日程文本即自动通过免费大模型（GLM-4-Flash）提取日程并静默存入 Outlook。
+
+          #### 📦 下载指南：
+          - **`SmartCalendar-...-standalone.zip` (推荐)**：免安装独立版，内置运行库，任何 Win10/Win11 电脑开箱即用，解压即可运行。
+          - **`SmartCalendar-...-light.zip`**：超轻量版，主程序仅 180KB（需要电脑已安装 .NET 9 运行时）。
+
+          #### 🚀 使用步骤：
+          1. 下载对应 `.zip` 压缩包并解压到任意文件夹。
+          2. 打开 `config.json`，填入你的免费 [智谱 API Key](https://open.bigmodel.cn)。
+          3. 双击运行 `SmartCalendar.exe`。
+          4. 右键托盘图标可一键开启「开机自启动」。
         files: |
-          dist/standalone/SmartCalendar.exe
-          dist/light/SmartCalendar.exe
+          dist/SmartCalendar-*.zip
           config.example.json
       env:
         GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
