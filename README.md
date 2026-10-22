@@ -7,9 +7,9 @@
 
 <p align="center">
   <a href="https://github.com/genlier/SmartCalendar/releases"><img src="https://img.shields.io/github/v/release/genlier/SmartCalendar?color=blue&label=Windows%20Release" alt="Release" /></a>
-  <a href="https://www.icloud.com/shortcuts/069de8c866484535ac8cf23f951dfedc"><img src="https://img.shields.io/badge/iOS%20快捷指令-一键获取-black?logo=apple" alt="iCloud Shortcut" /></a>
+  <a href="https://www.icloud.com/shortcuts/f373c1f401124733944dec192ecb513e"><img src="https://img.shields.io/badge/iOS%20快捷指令-豆包免Key版-green?logo=apple" alt="Doubao Shortcut" /></a>
+  <a href="https://www.icloud.com/shortcuts/069de8c866484535ac8cf23f951dfedc"><img src="https://img.shields.io/badge/iOS%20快捷指令-API直连版-black?logo=apple" alt="API Shortcut" /></a>
   <img src="https://img.shields.io/badge/平台-Windows%20%7C%20iOS-blue" alt="Platform" />
-  <img src="https://img.shields.io/badge/AI%20模型-智谱%20GLM--4--Flash%20(免费)-green" alt="GLM-4-Flash" />
   <img src="https://img.shields.io/badge/许可-MIT-orange" alt="License" />
 </p>
 
@@ -27,7 +27,7 @@
 
 现在你只需要：
 * **Windows 电脑**：鼠标划选文本按 `Ctrl + C` 复制，后台全静默自动入历！
-* **iPhone 手机**：长按复制文本，**敲敲手机背面两下**，自动存入 iCloud 日历！
+* **iPhone 手机**：复制文本，**敲敲手机背面两下**，自动存入 iCloud 日历！
 
 ---
 
@@ -39,26 +39,44 @@
 - 🕒 **精准相对时间推算**：以当前真实时分为基准，无论是“2小时后”、“半小时后”还是“明天下午”，都能精准对齐。
 - ⚡ **真正的 0% CPU 待机**：基于系统原生剪贴板事件驱动，只有在复制时才会响应，完全没有后台死循环轮询。
 - 🚫 **黑白名单双重过滤**：命中“已取消/账单/密码/退款”等黑名单时直接前置忽略，杜绝误触。
-- 🆓 **永久免费使用**：默认对接智谱 **GLM-4-Flash** 模型，永久免费且响应速度极快（1~2 秒内完成）。
+- 🆓 **永久免费使用**：提供免 API Key 版与大模型直连版，零使用门槛。
 
 ---
 
 ## 📱 iOS 端使用指南 (iPhone / iPad)
 
-iOS 端无需安装任何 App，直接使用 Apple 原生「快捷指令」运行：
+iOS 提供两种快捷指令方案，大家可根据喜好二选一：
 
-👉 **[📲 点此一键添加 iOS 快捷指令](https://www.icloud.com/shortcuts/069de8c866484535ac8cf23f951dfedc)**
+### 🟢 方案 A：【豆包 App 免 Key 版】（最推荐，零门槛小白首选 ⭐）
 
-### 极简 3 步配置：
-1. **获取快捷指令**：在 iPhone 上点击上方链接，点击 **「添加快捷指令」**。
-2. **填入 API Key**：
-   * 点开快捷指令的编辑界面（卡片右上角的 `···`）；
-   * 找到 **「获取 URL 内容」** 动作，在 `Authorization` 标头中，将 `Bearer ` 后面替换为您自己的[智谱免费 API Key](https://open.bigmodel.cn)。
-3. **绑定轻敲背面（一触即发）**：
-   * 打开 iPhone **设置 ➔ 辅助功能 ➔ 触控 ➔ 轻点背面 ➔ 轻点两下 ➔ 选中此快捷指令**；
-   * *(iPhone 15/16 Pro 也可在设置中直接绑定到侧边「操作按钮」)*。
+> 如果你手机上安装了字节跳动的「豆包」App，推荐直接用此版本：**完全无需注册开放平台、无需填写任何 API Key，点开即用！**
 
-**使用体验**：选中文本点复制 ➔ 敲手机背面两下 ➔ 手机震动提示，日程已自动加入 iCloud 日历！
+👉 **[📲 点击一键添加：豆包免 Key 快捷指令](https://www.icloud.com/shortcuts/f373c1f401124733944dec192ecb513e)**
+
+1. 点击上方链接添加到快捷指令；
+2. 绑定快捷触发（见下方说明）；
+3. 直接开始使用！
+
+---
+
+### ⚫ 方案 B：【原生 API 直连版】（极客专用，无第三方 App）
+
+> 不依赖任何第三方客户端，纯原生系统级 HTTP 接口调用智谱 GLM-4-Flash / OpenAI / DeepSeek。
+
+👉 **[📲 点击一键添加：原生 API 直连快捷指令](https://www.icloud.com/shortcuts/069de8c866484535ac8cf23f951dfedc)**
+
+1. 点击上方链接添加快捷指令；
+2. 点击卡片右上角 `···` 进入编辑，在「获取 URL 内容」的 `Authorization` 标头中填入自己的[智谱免费 API Key](https://open.bigmodel.cn)；
+3. 绑定快捷触发开始使用。
+
+---
+
+### ⚡ 快捷触发绑定（两种方案通用）
+
+* **轻敲背面（全机型推荐）**：打开 iPhone **设置 ➔ 辅助功能 ➔ 触控 ➔ 轻点背面 ➔ 轻点两下 ➔ 勾选此快捷指令**。
+* **操作按钮（iPhone 15/16 Pro）**：打开 iPhone **设置 ➔ 操作按钮 ➔ 选择快捷指令 ➔ 勾选此快捷指令**。
+
+**使用体验**：复制文本 ➔ 敲手机背面两下（或捏一下操作按钮） ➔ 手机震动，日程已自动存入 iCloud 日历！
 
 ---
 
