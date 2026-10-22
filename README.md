@@ -1,13 +1,14 @@
 # 📅 SmartCalendar (智能入历)
 
 <p align="center">
-  <strong>复制日程文本，自动分析并静默添加至 Outlook 日历</strong><br>
-  原生轻量 Windows 后台工具 · 永久免费 AI 驱动 · 待机 0% CPU 占用 · 自动查重防重复
+  <strong>复制日程文本，自动分析并静默添加至日历 (Windows & iOS 双端支持)</strong><br>
+  原生轻量工具 · 永久免费 AI 驱动 · 待机 0% CPU 占用 · 自动查重防重复
 </p>
 
 <p align="center">
-  <a href="https://github.com/genlier/SmartCalendar/releases"><img src="https://img.shields.io/github/v/release/genlier/SmartCalendar?color=blue&label=最新版本" alt="Release" /></a>
-  <img src="https://img.shields.io/badge/平台-Windows%2010%20%2F%2011-blue?logo=windows" alt="Windows" />
+  <a href="https://github.com/genlier/SmartCalendar/releases"><img src="https://img.shields.io/github/v/release/genlier/SmartCalendar?color=blue&label=Windows%20Release" alt="Release" /></a>
+  <a href="https://www.icloud.com/shortcuts/069de8c866484535ac8cf23f951dfedc"><img src="https://img.shields.io/badge/iOS%20快捷指令-一键获取-black?logo=apple" alt="iCloud Shortcut" /></a>
+  <img src="https://img.shields.io/badge/平台-Windows%20%7C%20iOS-blue" alt="Platform" />
   <img src="https://img.shields.io/badge/AI%20模型-智谱%20GLM--4--Flash%20(免费)-green" alt="GLM-4-Flash" />
   <img src="https://img.shields.io/badge/许可-MIT-orange" alt="License" />
 </p>
@@ -24,27 +25,44 @@
 
 以前你需要：打开日历 → 点新建 → 逐字输入标题 → 选日期 → 设时间 → 填地点。
 
-现在你只需要：**鼠标划选文本按 `Ctrl + C` 复制，搞定。**  
-SmartCalendar 会在后台自动唤起 AI 理解文本含义，并将日程**静默存入 Outlook 日历**，并在屏幕右下角弹出轻量气泡通知。
+现在你只需要：
+* **Windows 电脑**：鼠标划选文本按 `Ctrl + C` 复制，后台全静默自动入历！
+* **iPhone 手机**：长按复制文本，**敲敲手机背面两下**，自动存入 iCloud 日历！
 
 ---
 
 ## ✨ 核心特性
 
 - 🚀 **100% 后台全静默**：直接存入本地日历，没有多余弹窗，不需要二次确认。
-- 🔍 **智能日历查重（防重复录入）**：录入前自动检索日历，若同一天已存在同名日程，自动跳过并轻量提示，即使误按多次复制也不会堆积重复事件。
-- 📆 **全天与跨天自适应**：自动识别具体时段（14:00-15:00）或全天事件（生日、出差、节假日、截稿日），全天日程自动显示在顶部横幅，不干扰时间块。
-- 🕒 **精准相对时间推算**：以当前真实时分为基准，无论是“2小时后”、“半小时后”还是“明天下午”，都能毫秒级精准对齐。
-- ⚡ **真正的 0% CPU 待机**：基于 Windows 原生剪贴板事件驱动，只有在按下复制时才会响应，完全没有后台死循环轮询。
-- 🚫 **黑白名单双重过滤**：
-  - **白名单关键词**：命中日期或日程关键词才进行 AI 解析；
-  - **黑名单关键词**（`ignore_keywords`）：命中如“已取消/账单/密码/退款”等词汇直接前置忽略，杜绝误触。
+- 🔍 **智能日历查重（防重复录入）**：录入前自动检索日历，若已存在同名日程，自动跳过并轻量提示，避免重复入历。
+- 📆 **全天与跨天自适应**：自动识别具体时段（14:00-15:00）或全天事件（生日、出差、节假日、截稿日），全天日程自动显示在顶部横幅。
+- 🕒 **精准相对时间推算**：以当前真实时分为基准，无论是“2小时后”、“半小时后”还是“明天下午”，都能精准对齐。
+- ⚡ **真正的 0% CPU 待机**：基于系统原生剪贴板事件驱动，只有在复制时才会响应，完全没有后台死循环轮询。
+- 🚫 **黑白名单双重过滤**：命中“已取消/账单/密码/退款”等黑名单时直接前置忽略，杜绝误触。
 - 🆓 **永久免费使用**：默认对接智谱 **GLM-4-Flash** 模型，永久免费且响应速度极快（1~2 秒内完成）。
-- 🔄 **开机自启动**：托盘右键直接勾选开机自启，开机即用，无感守护。
 
 ---
 
-## 🚀 3 步开始使用
+## 📱 iOS 端使用指南 (iPhone / iPad)
+
+iOS 端无需安装任何 App，直接使用 Apple 原生「快捷指令」运行：
+
+👉 **[📲 点此一键添加 iOS 快捷指令](https://www.icloud.com/shortcuts/069de8c866484535ac8cf23f951dfedc)**
+
+### 极简 3 步配置：
+1. **获取快捷指令**：在 iPhone 上点击上方链接，点击 **「添加快捷指令」**。
+2. **填入 API Key**：
+   * 点开快捷指令的编辑界面（卡片右上角的 `···`）；
+   * 找到 **「获取 URL 内容」** 动作，在 `Authorization` 标头中，将 `Bearer ` 后面替换为您自己的[智谱免费 API Key](https://open.bigmodel.cn)。
+3. **绑定轻敲背面（一触即发）**：
+   * 打开 iPhone **设置 ➔ 辅助功能 ➔ 触控 ➔ 轻点背面 ➔ 轻点两下 ➔ 选中此快捷指令**；
+   * *(iPhone 15/16 Pro 也可在设置中直接绑定到侧边「操作按钮」)*。
+
+**使用体验**：选中文本点复制 ➔ 敲手机背面两下 ➔ 手机震动提示，日程已自动加入 iCloud 日历！
+
+---
+
+## 💻 Windows 端使用指南
 
 ### 第 1 步：下载解压
 
@@ -54,7 +72,7 @@ SmartCalendar 会在后台自动唤起 AI 理解文本含义，并将日程**静
 ### 第 2 步：填入免费 API Key
 
 1. 访问 [智谱 AI 开放平台](https://open.bigmodel.cn) 免费注册账号。
-2. 进入控制台「API Keys」页面复制你的密钥（新老用户调用 GLM-4-Flash 均永久免费）。
+2. 进入控制台「API Keys」页面复制你的密钥（调用 GLM-4-Flash 永久免费）。
 3. 打开解压目录下的 `config.json`，把密钥粘贴进去：
    ```json
    {
@@ -75,7 +93,7 @@ SmartCalendar 会在后台自动唤起 AI 理解文本含义，并将日程**静
 
 ---
 
-## ⚙️ 配置文件说明 (`config.json`)
+## ⚙️ Windows 配置文件说明 (`config.json`)
 
 | 配置项 | 默认值 | 说明 |
 |---|---|---|
@@ -91,7 +109,7 @@ SmartCalendar 会在后台自动唤起 AI 理解文本含义，并将日程**静
 
 ---
 
-## 🖱️ 快捷功能与操作
+## 🖱️ Windows 托盘快捷功能
 
 右键点击右下角的 📅 托盘图标：
 - **✓ 开机自启动**：勾选后电脑开机自动在后台静默运行。
@@ -116,7 +134,7 @@ SmartCalendar 会在后台自动唤起 AI 理解文本含义，并将日程**静
 
 <details>
 <summary><strong>Q: 能换成 DeepSeek 或其他大模型吗？</strong></summary>
-可以。程序接口完全遵循标准 OpenAI 协议，只需在 <code>config.json</code> 中将 <code>api_url</code> 和 <code>model</code> 改为你所用平台的地址与模型名称即可。
+可以。程序接口完全遵循标准 OpenAI 协议，只需将 <code>api_url</code> 和 <code>model</code> 改为你所用平台的地址与模型名称即可。
 </details>
 
 ---
