@@ -1,0 +1,31 @@
+# Sensitive Configuration (API Keys)
+config.json
+*.key
+
+# Build outputs
+bin/
+obj/
+publish/
+*.exe
+*.dll
+*.pdb
+
+# Logs & Temp files
+*.log
+smart_calendar.log
+crash.log
+*.ics
+
+# IDE & Editor files
+.vs/
+.vscode/
+*.user
+*.suo
+*.userosscache
+*.sln.docstates
+
+# OS generated files
+Thumbs.db
+ehthumbs.db
+Desktop.ini
+$RECYCLE.BIN/

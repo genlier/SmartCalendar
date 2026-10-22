@@ -1,0 +1,19 @@
+{
+  "_help": "api_key: 在 https://open.bigmodel.cn 免费注册获取 (GLM-4-Flash 永久免费)",
+  "api_key": "YOUR_ZHIPU_API_KEY_HERE",
+  "api_url": "https://open.bigmodel.cn/api/paas/v4/chat/completions",
+  "model": "glm-4-flash",
+  "calendar_mode": "classic_outlook",
+  "reminder_minutes": 15,
+  "min_text_length": 4,
+  "max_text_length": 2000,
+  "keywords": [
+    "会议", "约", "面试", "航班", "火车", "高铁",
+    "上午", "下午", "晚上", "点半", "点钟",
+    "月", "号", "周", "星期", "明天", "后天", "下周", "下个月",
+    "开会", "聚餐", "预约", "挂号", "考试", "答辩",
+    "汇报", "培训", "出发", "到达", "截止", "deadline",
+    "meeting", "appointment", "flight", "schedule",
+    "tomorrow", "next week", "remind"
+  ]
+}
