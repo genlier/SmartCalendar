@@ -61,7 +61,7 @@ public class AppConfig
     public string Model { get; set; } = "glm-4-flash";
 
     [JsonPropertyName("calendar_mode")]
-    public string CalendarMode { get; set; } = "classic_outlook";
+    public string CalendarMode { get; set; } = "classic_outlook"; // "classic_outlook" 或 "new_outlook"
 
     [JsonPropertyName("reminder_minutes")]
     public int ReminderMinutes { get; set; } = 15;
@@ -95,6 +95,9 @@ public class EventResult
 {
     [JsonPropertyName("is_event")]
     public bool IsEvent { get; set; }
+
+    [JsonPropertyName("is_all_day")]
+    public bool IsAllDay { get; set; }
 
     [JsonPropertyName("title")]
     public string? Title { get; set; }
@@ -165,7 +168,7 @@ public class ClipboardAppContext : ApplicationContext
         _msgForm = new MessageListenerForm(OnClipboardChanged);
         AddClipboardFormatListener(_msgForm.Handle);
 
-        Log("🚀 智能入历已启动 (v1.3 - 支持黑名单关键词与经典Outlook全静默)");
+        Log("🚀 智能入历已启动 (v1.4 - 支持全天日程与查重防重复)");
 
         if (string.IsNullOrWhiteSpace(_config.ApiKey))
         {
@@ -230,7 +233,7 @@ public class ClipboardAppContext : ApplicationContext
     {
         var contextMenu = new ContextMenuStrip();
 
-        var titleItem = new ToolStripMenuItem("📅 智能入历 (v1.3)") { Enabled = false };
+        var titleItem = new ToolStripMenuItem("📅 智能入历 (v1.4)") { Enabled = false };
         titleItem.Font = new Font(titleItem.Font, FontStyle.Bold);
 
         _toggleMenuItem = new ToolStripMenuItem("⏸️ 暂停监听", null, (s, e) => ToggleListening());
@@ -419,14 +422,12 @@ public class ClipboardAppContext : ApplicationContext
         if (text.Length < _config.MinTextLength || text.Length > _config.MaxTextLength)
             return;
 
-        // 黑名单关键词前置过滤
         if (ShouldIgnore(text))
         {
             Log($"🚫 命中黑名单关键词，已跳过: {text.Replace("\r", " ").Replace("\n", " ").Substring(0, Math.Min(text.Length, 40))}...");
             return;
         }
 
-        // 白名单关键词与日期正则预过滤
         if (!MightContainEvent(text))
             return;
 
@@ -511,21 +512,16 @@ public class ClipboardAppContext : ApplicationContext
                 _ => "周日"
             };
 
-            string systemPrompt = $@"你是一个日程信息提取助手。分析用户文本，提取日程/事件/会议/约会信息。
-必须且只能返回一个 JSON 对象，禁止 markdown 标记或任何额外文字：
-
-包含日程返回格式：
-{{""is_event"":true,""title"":""简洁标题"",""start_date"":""YYYY-MM-DD"",""start_time"":""HH:mm"",""end_time"":""HH:mm"",""location"":""地点或空字符串"",""notes"":""备注或空字符串""}}
-
-不含日程返回格式：
-{{""is_event"":false}}
+            string systemPrompt = $@"你是一个日程提取助手。根据用户文本提取日程信息，只返回严格合法的纯JSON对象（禁止markdown代码块或多余文字）：
+{{""is_event"":true,""is_all_day"":true/false,""title"":""简洁标题"",""start_date"":""YYYY-MM-DD"",""start_time"":""HH:mm"",""end_time"":""HH:mm"",""location"":""地点或空字符串"",""notes"":""备注或空字符串""}}
+若不含日程返回：{{""is_event"":false}}
 
 规则：
-1. 今天是 {now:yyyy-MM-dd}（{weekdayCn}），根据此推算""明天""""下周三""""后天""等相对日期
-2. 无明确结束时间，则默认持续 1 小时
-3. 只有时间无明确日期，取最近将来的那一天
-4. 无地点或备注填空字符串
-5. 多个日程只提取最核心的一个";
+1. 当前真实基准时间是：{now:yyyy-MM-dd HH:mm}（{weekdayCn}）
+2. 全天判断：若仅提到日期无具体几点几分（如“明天出差”、“周五生日”、“截止日”），设 ""is_all_day"": true，start_time和end_time填空字符串；若有具体时间（如“下午2点”），设 ""is_all_day"": false。
+3. 持续时间：有时段但无明确结束时间的，默认持续 1 小时。
+4. 纯时间无日期，取最近将来的那一刻。
+5. 无地点或备注填空字符串。";
 
             var requestBody = new
             {
@@ -563,28 +559,38 @@ public class ClipboardAppContext : ApplicationContext
             }
 
             var eventData = JsonSerializer.Deserialize<EventResult>(rawContent);
-            if (eventData == null || !eventData.IsEvent)
+            if (eventData == null || !eventData.IsEvent || string.IsNullOrWhiteSpace(eventData.Title))
             {
                 Log("   → AI 判定: 非日程信息");
                 return;
             }
 
-            Log($"📅 成功解析日程: 【{eventData.Title}】 {eventData.StartDate} {eventData.StartTime}-{eventData.EndTime} @ {eventData.Location}");
+            string modeDesc = eventData.IsAllDay ? "【全天】" : $"{eventData.StartTime}-{eventData.EndTime}";
+            Log($"📅 成功解析日程: 【{eventData.Title}】 {eventData.StartDate} {modeDesc} @ {eventData.Location}");
 
             bool added;
+            bool alreadyExists;
             string errorMsg;
+
             if (_config.CalendarMode.Equals("new_outlook", StringComparison.OrdinalIgnoreCase))
             {
                 added = AddToNewOutlook(eventData, _config.ReminderMinutes, out errorMsg);
+                alreadyExists = false;
             }
             else
             {
-                added = AddToClassicOutlook(eventData, _config.ReminderMinutes, out errorMsg);
+                added = AddToClassicOutlook(eventData, _config.ReminderMinutes, out alreadyExists, out errorMsg);
             }
 
-            if (added)
+            if (alreadyExists)
             {
-                string summary = $"{eventData.Title}\n{eventData.StartDate} {eventData.StartTime}" +
+                _notifyIcon.ShowBalloonTip(3000, "⚠️ 日程已存在", $"【{eventData.Title}】已在日历中，无需重复添加", ToolTipIcon.Info);
+                Log($"⚠️ 日历中已存在该日程，已跳过: {eventData.Title}");
+            }
+            else if (added)
+            {
+                string timeDesc = eventData.IsAllDay ? "全天日程" : eventData.StartTime ?? "";
+                string summary = $"{eventData.Title}\n{eventData.StartDate} {timeDesc}" +
                                  (!string.IsNullOrEmpty(eventData.Location) ? $" @ {eventData.Location}" : "");
                 _notifyIcon.ShowBalloonTip(4000, "✅ 日程已静默添加", $"{summary}\n已直接存入 Outlook 日历", ToolTipIcon.Info);
                 Log($"✅ 成功静默存入 Outlook: {eventData.Title}");
@@ -601,9 +607,56 @@ public class ClipboardAppContext : ApplicationContext
         }
     }
 
-    private static bool AddToClassicOutlook(EventResult ev, int reminderMinutes, out string error)
+    private static bool EventExistsInOutlook(dynamic outlook, string title, DateTime startDt)
     {
+        try
+        {
+            dynamic ns = outlook.GetNamespace("MAPI");
+            dynamic calendar = ns.GetDefaultFolder(9); // 9 = olFolderCalendar
+            dynamic items = calendar.Items;
+
+            DateTime dayStart = startDt.Date;
+            DateTime dayEnd = dayStart.AddDays(1);
+            string filter = $"[Start] >= '{dayStart:yyyy-MM-dd 00:00}' AND [Start] < '{dayEnd:yyyy-MM-dd 00:00}'";
+            dynamic restricted = items.Restrict(filter);
+
+            string targetTitle = title.Trim();
+            foreach (var item in restricted)
+            {
+                try
+                {
+                    string subj = item.Subject ?? "";
+                    if (string.Equals(subj.Trim(), targetTitle, StringComparison.OrdinalIgnoreCase))
+                    {
+                        return true;
+                    }
+                }
+                catch { }
+            }
+        }
+        catch { }
+        return false;
+    }
+
+    private static bool AddToClassicOutlook(EventResult ev, int reminderMinutes, out bool alreadyExists, out string error)
+    {
+        alreadyExists = false;
         error = string.Empty;
+
+        DateTime startDt;
+        if (!string.IsNullOrEmpty(ev.StartTime) && DateTime.TryParse($"{ev.StartDate} {ev.StartTime}", out startDt)) { }
+        else if (DateTime.TryParse(ev.StartDate, out startDt)) { }
+        else { startDt = DateTime.Now.AddHours(1); }
+
+        DateTime endDt;
+        if (!string.IsNullOrEmpty(ev.EndTime) && DateTime.TryParse($"{ev.StartDate} {ev.EndTime}", out endDt))
+        {
+            if (endDt <= startDt) endDt = startDt.AddHours(1);
+        }
+        else
+        {
+            endDt = ev.IsAllDay ? startDt : startDt.AddHours(1);
+        }
 
         for (int attempt = 0; attempt < 2; attempt++)
         {
@@ -617,24 +670,27 @@ public class ClipboardAppContext : ApplicationContext
                 }
 
                 dynamic outlook = Activator.CreateInstance(outlookType)!;
-                dynamic appt = outlook.CreateItem(1);
 
-                appt.Subject = ev.Title ?? "新日程";
-
-                if (!DateTime.TryParse($"{ev.StartDate} {ev.StartTime}", out DateTime startDt))
+                // 查重检测
+                if (EventExistsInOutlook(outlook, ev.Title ?? "", startDt))
                 {
-                    startDt = DateTime.Now.AddHours(1);
+                    alreadyExists = true;
+                    return true;
                 }
-                appt.Start = startDt;
 
-                if (!string.IsNullOrEmpty(ev.EndTime) && DateTime.TryParse($"{ev.StartDate} {ev.EndTime}", out DateTime endDt))
+                dynamic appt = outlook.CreateItem(1);
+                appt.Subject = ev.Title ?? "新日程";
+                appt.AllDayEvent = ev.IsAllDay;
+
+                if (ev.IsAllDay)
                 {
-                    if (endDt <= startDt) endDt = startDt.AddHours(1);
-                    appt.End = endDt;
+                    appt.Start = startDt.Date;
+                    appt.End = endDt.Date.AddDays(1);
                 }
                 else
                 {
-                    appt.End = startDt.AddHours(1);
+                    appt.Start = startDt;
+                    appt.End = endDt;
                 }
 
                 if (!string.IsNullOrEmpty(ev.Location)) appt.Location = ev.Location;
@@ -666,8 +722,9 @@ public class ClipboardAppContext : ApplicationContext
         try
         {
             DateTime startDt;
-            if (!DateTime.TryParse($"{ev.StartDate} {ev.StartTime}", out startDt))
-                startDt = DateTime.Now.AddHours(1);
+            if (!string.IsNullOrEmpty(ev.StartTime) && DateTime.TryParse($"{ev.StartDate} {ev.StartTime}", out startDt)) { }
+            else if (DateTime.TryParse(ev.StartDate, out startDt)) { }
+            else { startDt = DateTime.Now.AddHours(1); }
 
             DateTime endDt;
             if (!string.IsNullOrEmpty(ev.EndTime) && DateTime.TryParse($"{ev.StartDate} {ev.EndTime}", out endDt))
@@ -676,13 +733,11 @@ public class ClipboardAppContext : ApplicationContext
             }
             else
             {
-                endDt = startDt.AddHours(1);
+                endDt = ev.IsAllDay ? startDt : startDt.AddHours(1);
             }
 
             string uid = Guid.NewGuid().ToString("N");
             string nowUtc = DateTime.UtcNow.ToString("yyyyMMddTHHmmssZ");
-            string dtStart = startDt.ToString("yyyyMMddTHHmmss");
-            string dtEnd = endDt.ToString("yyyyMMddTHHmmss");
 
             var sb = new StringBuilder();
             sb.AppendLine("BEGIN:VCALENDAR");
@@ -693,8 +748,18 @@ public class ClipboardAppContext : ApplicationContext
             sb.AppendLine("BEGIN:VEVENT");
             sb.AppendLine($"UID:{uid}");
             sb.AppendLine($"DTSTAMP:{nowUtc}");
-            sb.AppendLine($"DTSTART:{dtStart}");
-            sb.AppendLine($"DTEND:{dtEnd}");
+
+            if (ev.IsAllDay)
+            {
+                sb.AppendLine($"DTSTART;VALUE=DATE:{startDt:yyyyMMdd}");
+                sb.AppendLine($"DTEND;VALUE=DATE:{endDt.AddDays(1):yyyyMMdd}");
+            }
+            else
+            {
+                sb.AppendLine($"DTSTART:{startDt:yyyyMMddTHHmmss}");
+                sb.AppendLine($"DTEND:{endDt:yyyyMMddTHHmmss}");
+            }
+
             sb.AppendLine($"SUMMARY:{EscapeIcs(ev.Title ?? "新日程")}");
             if (!string.IsNullOrEmpty(ev.Location))
                 sb.AppendLine($"LOCATION:{EscapeIcs(ev.Location)}");
