@@ -83,6 +83,12 @@ public class AppConfig
         "meeting", "appointment", "flight", "schedule",
         "tomorrow", "next week", "remind"
     };
+
+    [JsonPropertyName("ignore_keywords")]
+    public string[] IgnoreKeywords { get; set; } = new[]
+    {
+        "验证码", "密码", "已取消", "取消会议", "账单", "扣款", "历史消息", "退款"
+    };
 }
 
 public class EventResult
@@ -156,11 +162,10 @@ public class ClipboardAppContext : ApplicationContext
         InitConfig();
         InitTrayIcon();
 
-        // 创建专用的原生消息接收窗体
         _msgForm = new MessageListenerForm(OnClipboardChanged);
         AddClipboardFormatListener(_msgForm.Handle);
 
-        Log("🚀 智能入历已启动 (经典Outlook全静默版)");
+        Log("🚀 智能入历已启动 (v1.3 - 支持黑名单关键词与经典Outlook全静默)");
 
         if (string.IsNullOrWhiteSpace(_config.ApiKey))
         {
@@ -183,7 +188,6 @@ public class ClipboardAppContext : ApplicationContext
             WindowState = FormWindowState.Minimized;
             ShowInTaskbar = false;
             Size = new Size(1, 1);
-            // 确保窗口句柄立即被创建
             var _ = Handle;
         }
 
@@ -226,7 +230,7 @@ public class ClipboardAppContext : ApplicationContext
     {
         var contextMenu = new ContextMenuStrip();
 
-        var titleItem = new ToolStripMenuItem("📅 智能入历 (全静默版)") { Enabled = false };
+        var titleItem = new ToolStripMenuItem("📅 智能入历 (v1.3)") { Enabled = false };
         titleItem.Font = new Font(titleItem.Font, FontStyle.Bold);
 
         _toggleMenuItem = new ToolStripMenuItem("⏸️ 暂停监听", null, (s, e) => ToggleListening());
@@ -415,6 +419,14 @@ public class ClipboardAppContext : ApplicationContext
         if (text.Length < _config.MinTextLength || text.Length > _config.MaxTextLength)
             return;
 
+        // 黑名单关键词前置过滤
+        if (ShouldIgnore(text))
+        {
+            Log($"🚫 命中黑名单关键词，已跳过: {text.Replace("\r", " ").Replace("\n", " ").Substring(0, Math.Min(text.Length, 40))}...");
+            return;
+        }
+
+        // 白名单关键词与日期正则预过滤
         if (!MightContainEvent(text))
             return;
 
@@ -443,6 +455,19 @@ public class ClipboardAppContext : ApplicationContext
             }
         }
         return null;
+    }
+
+    private bool ShouldIgnore(string text)
+    {
+        if (_config.IgnoreKeywords != null)
+        {
+            foreach (var ikw in _config.IgnoreKeywords)
+            {
+                if (!string.IsNullOrWhiteSpace(ikw) && text.IndexOf(ikw, StringComparison.OrdinalIgnoreCase) >= 0)
+                    return true;
+            }
+        }
+        return false;
     }
 
     private bool MightContainEvent(string text)
@@ -554,7 +579,6 @@ public class ClipboardAppContext : ApplicationContext
             }
             else
             {
-                // 默认使用经典 Outlook 100% 全静默写入
                 added = AddToClassicOutlook(eventData, _config.ReminderMinutes, out errorMsg);
             }
 

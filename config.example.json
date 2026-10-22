@@ -15,5 +15,8 @@
     "汇报", "培训", "出发", "到达", "截止", "deadline",
     "meeting", "appointment", "flight", "schedule",
     "tomorrow", "next week", "remind"
+  ],
+  "ignore_keywords": [
+    "验证码", "密码", "已取消", "取消会议", "账单", "扣款", "历史消息", "退款"
   ]
 }
