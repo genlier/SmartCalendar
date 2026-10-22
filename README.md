@@ -1,47 +1,58 @@
 # 📅 SmartCalendar (智能入历)
 
 <p align="center">
-  <strong>Windows 轻量后台工具：复制文本即自动识别日程并存入 Outlook 日历</strong>
+  <strong>复制日程文本，自动分析并静默添加至 Outlook 日历</strong><br>
+  原生轻量 Windows 后台工具 · 永久免费 AI 驱动 · 待机 0% CPU 占用
 </p>
 
 <p align="center">
-  <img src="https://img.shields.io/badge/Platform-Windows%2010%2F11-blue?logo=windows" alt="Platform" />
-  <img src="https://img.shields.io/badge/.NET-9.0-purple?logo=dotnet" alt=".NET 9.0" />
-  <img src="https://img.shields.io/badge/AI%20Model-GLM--4--Flash%20(Free)-green" alt="GLM-4-Flash" />
-  <img src="https://img.shields.io/badge/License-MIT-orange" alt="License" />
+  <a href="https://github.com/genlier/SmartCalendar/releases"><img src="https://img.shields.io/github/v/release/genlier/SmartCalendar?color=blue&label=最新版本" alt="Release" /></a>
+  <img src="https://img.shields.io/badge/平台-Windows%2010%20%2F%2011-blue?logo=windows" alt="Windows" />
+  <img src="https://img.shields.io/badge/AI%20模型-智谱%20GLM--4--Flash%20(免费)-green" alt="GLM-4-Flash" />
+  <img src="https://img.shields.io/badge/许可-MIT-orange" alt="License" />
 </p>
 
 ---
 
-## ✨ 核心特性
+## 💡 它是用来解决什么的？
 
-- 📋 **复制即识别**：在任意聊天软件（微信/钉钉/飞书）、网页或邮件中按 `Ctrl + C` 复制日程，自动提取事件标题、日期、时间、地点与备注。
-- ⚡ **真正的 0% CPU 占用**：采用 Windows 原生 Win32 `AddClipboardFormatListener` 事件消息机制，**完全摒弃死循环轮询**，平常待机不吃 CPU 与内存。
-- 🤖 **完全免费的大模型支持**：内置对接智谱 **GLM-4-Flash**（永久免费），每次识别耗时仅 1~2 秒，零使用成本；同时兼容 DeepSeek、MiMo、OpenAI 等标准接口。
-- 📅 **两种日历模式自由切换**：
-  - **经典版 Outlook 模式**：通过系统底层 COM 自动化，**100% 后台全静默写入**，无弹窗、无需二次点击！
-  - **新版 Outlook (New Outlook) 模式**：通过标准 `.ics` 协议自动唤起日程卡片，一键确认保存。
-- 🛡️ **智能预过滤与隐私保护**：内置正则表达式与日程关键词前置拦截。复制代码、密码、网址或普通文本时**绝对不会发送给 AI**，零冗余网络请求。
-- 🚀 **系统托盘与开机自启**：右键托盘图标一键勾选开机自启，支持随时暂停/恢复监听、一键修改配置与查看日志。
+工作中经常在**微信、飞书、钉钉、邮件或网页**里收到各种日程信息：
+> *“明天下午2点在星巴克和张总讨论预算”*  
+> *“下周三上午10:30部门例会，会议室A305”*  
+> *“您的航班 CA1234 将于 10月28日 08:30 起飞...”*
+
+以前你需要：打开日历 → 点新建 → 逐字输入标题 → 选日期 → 设时间 → 填地点。
+
+现在你只需要：**长按选中文本按 `Ctrl + C` 复制，搞定。**  
+SmartCalendar 会在后台自动唤起 AI 理解文本含义，并将日程**静默存入 Outlook 日历**，并在屏幕右下角弹出轻量气泡通知。
 
 ---
 
-## 🚀 快速上手
+## ✨ 为什么好用？
 
-### 1. 下载即用
+- 🚀 **100% 后台全静默**：直接存入本地日历，没有多余弹窗，不需要二次确认。
+- ⚡ **真正的 0% CPU 待机**：基于 Windows 原生剪贴板事件驱动，只有在按下复制时才会响应，完全没有后台死循环轮询。
+- 🆓 **永久免费使用**：默认对接智谱 **GLM-4-Flash** 模型，永久免费且响应速度极快（1~2 秒内完成）。
+- 🛡️ **智能隐私预过滤**：内置关键词与正则拦截。复制代码、网址、密码等普通内容时**直接跳过，绝不发给 AI**。
+- 🔄 **开机自启动**：托盘右键直接勾选开机自启，开机即用，无感守护。
 
-前往 [Releases](../../releases) 页面下载压缩包：
-- **`SmartCalendar.exe`**：仅几百 KB，原生单文件执行档。
-- **`config.example.json`**：复制并重命名为 `config.json`。
+---
 
-### 2. 获取免费 API Key
+## 🚀 3 步开始使用
 
-1. 访问 [智谱 AI 开放平台](https://open.bigmodel.cn) 注册账号（免费）。
-2. 在控制台进入「API Keys」页面复制你的密钥。
-3. 打开 `config.json` 填入 API Key：
+### 第 1 步：下载解压
+
+前往 👉 **[Releases 页面](https://github.com/genlier/SmartCalendar/releases/latest)** 下载最新的压缩包：
+- **`SmartCalendar-...-standalone.zip`（推荐）**：免安装独立版，任何 Win10/Win11 电脑解压即可运行。
+
+### 第 2 步：填入免费 API Key
+
+1. 访问 [智谱 AI 开放平台](https://open.bigmodel.cn) 免费注册账号。
+2. 进入控制台「API Keys」页面复制你的密钥（新老用户调用 GLM-4-Flash 均永久免费）。
+3. 打开解压目录下的 `config.json`，把密钥粘贴进去：
    ```json
    {
-     "api_key": "你的API密钥填在这里",
+     "api_key": "这里填入你的API密钥",
      "api_url": "https://open.bigmodel.cn/api/paas/v4/chat/completions",
      "model": "glm-4-flash",
      "calendar_mode": "classic_outlook",
@@ -49,58 +60,45 @@
    }
    ```
 
-### 3. 双击运行
+### 第 3 步：双击启动
 
-双击 `SmartCalendar.exe`，右下角任务栏托盘会浮现 📅 **日历小图标**。
-
-现在复制一段文本试试：
-> *“明天下午2点在星巴克和张总讨论Q4预算”*
-
-右下角将弹出系统气泡：
-`✅ 日程已静默添加：【讨论Q4预算】明天 14:00 @ 星巴克`
+双击运行 **`SmartCalendar.exe`**。
+* 屏幕右下角任务栏会出现一个 📅 **日历小图标**；
+* 随便复制一句包含日程的话（例如：`明天上午10点开会`）；
+* 屏幕右下角弹出通知：`✅ 日程已静默添加`，日历里已经有该事件了！
 
 ---
 
-## ⚙️ 配置文件说明 (`config.json`)
+## 🖱️ 快捷功能与操作
 
-| 配置项 | 默认值 | 说明 |
-|---|---|---|
-| `api_key` | `""` | 你的大模型 API 密钥（推荐智谱开放平台免费申请） |
-| `api_url` | `https://open.bigmodel.cn/...` | OpenAI 格式的 Chat Completions 接口地址 |
-| `model` | `"glm-4-flash"` | 模型名称（推荐 `glm-4-flash`） |
-| `calendar_mode` | `"classic_outlook"` | 日历写入模式：`classic_outlook` (全静默写入) / `new_outlook` (卡片唤起) |
-| `reminder_minutes`| `15` | 日历提前提醒时间（分钟） |
-| `min_text_length` | `4` | 过滤剪贴板最小字数 |
-| `max_text_length` | `2000` | 过滤剪贴板最大字数 |
-| `keywords` | `[...]` | 预过滤关键词列表，命中后才会调用 AI 分析 |
+右键点击右下角的 📅 托盘图标：
+- **✓ 开机自启动**：勾选后电脑开机自动在后台静默运行。
+- **⏸️ 暂停监听 / ▶️ 恢复监听**：需要频繁复制大量文本时可临时暂停。
+- **⚙️ 打开配置文件**：快速调出 `config.json` 修改设置。
+- **🔄 重新加载配置**：改完配置点此刷新，无需重启软件。
+- **📝 查看运行日志**：查看历史识别记录与录入结果。
 
 ---
 
-## 🛠️ 本地编译构建
+## ❓ 常见问题
 
-本项目基于 **.NET 9.0** 与 Windows Forms 构建：
+<details>
+<summary><strong>Q: 它是怎么做到不泄露隐私的？</strong></summary>
+程序内置了本地预过滤规则，只有当复制的文本同时满足「包含时间/日期/会议/约会等日程词汇」时才会触发 AI 解析；平常复制的代码、密码、长篇文章或普通对话全部在本地直接静默忽略，绝不发起任何网络请求。
+</details>
 
-```powershell
-# 1. 克隆代码仓库
-git clone https://github.com/your-username/SmartCalendar.git
-cd SmartCalendar
+<details>
+<summary><strong>Q: 经典 Outlook 和新版 Outlook 都能用吗？</strong></summary>
+都可以。默认使用的是 <code>classic_outlook</code> 模式（经典版完全静默写入）。如果你电脑上只用微软最新的 New Outlook，可以在 <code>config.json</code> 中把 <code>calendar_mode</code> 改为 <code>new_outlook</code>，识别后会自动调起新版 Outlook 日程卡片一键保存。
+</details>
 
-# 2. 发布单个 EXE 文件 (依赖本机 .NET 运行时，体积仅 ~180KB)
-dotnet publish src/SmartCalendar.csproj -c Release -r win-x64 -p:PublishSingleFile=true --self-contained false -o dist
-
-# 3. 或者发布独立全打包 EXE (免安装运行时，可在任何 Win10/11 电脑上运行)
-dotnet publish src/SmartCalendar.csproj -c Release -r win-x64 -p:PublishSingleFile=true -p:EnableCompressionInSingleFile=true --self-contained true -o dist-standalone
-```
-
----
-
-## 🛡️ 安全与脱敏规范
-
-- 本开源仓库严格遵守安全合规原则，所有配置文件与代码均已剔除私有密钥与个人路径。
-- 用户实际使用的 `config.json` 与运行日志 `smart_calendar.log` 已被 `.gitignore` 默认排除，不会被意外提交至公共仓库。
+<details>
+<summary><strong>Q: 能换成 DeepSeek 或其他大模型吗？</strong></summary>
+可以。程序接口完全遵循标准 OpenAI 协议，只需在 <code>config.json</code> 中将 <code>api_url</code> 和 <code>model</code> 改为你所用平台的地址与模型名称即可。
+</details>
 
 ---
 
-## 📄 开源许可证
+## 📄 开源许可
 
-本项目基于 [MIT License](LICENSE) 开源。欢迎提 Issue 与 PR！
+本项目基于 [MIT License](LICENSE) 开源，欢迎提交 Issue 或 Pull Request！
