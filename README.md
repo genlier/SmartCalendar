@@ -1,13 +1,13 @@
 # 📅 SmartCalendar (智能入历)
 
 <p align="center">
-  <strong>复制日程文本，自动分析并静默添加至日历 (Windows & iOS 双端支持)</strong><br>
+  <strong>复制日程文本，按快捷键或在复制时识别并添加至日历（Windows 与 iOS）</strong><br>
   原生轻量工具 · 永久免费 AI 驱动 · 待机 0% CPU 占用 · 自动查重防重复
 </p>
 
 <p align="center">
   <a href="https://github.com/genlier/SmartCalendar/releases"><img src="https://img.shields.io/github/v/release/genlier/SmartCalendar?color=blue&label=Windows%20Release" alt="Release" /></a>
-  <a href="https://www.icloud.com/shortcuts/f373c1f401124733944dec192ecb513e"><img src="https://img.shields.io/badge/iOS%20快捷指令-豆包免Key版-green?logo=apple" alt="Doubao Shortcut" /></a>
+  <a href="https://www.icloud.com/shortcuts/c8f09aa23c504964946a427d21ebb934"><img src="https://img.shields.io/badge/iOS%20快捷指令-豆包免Key版-green?logo=apple" alt="Doubao Shortcut" /></a>
   <a href="https://www.icloud.com/shortcuts/069de8c866484535ac8cf23f951dfedc"><img src="https://img.shields.io/badge/iOS%20快捷指令-API直连版-black?logo=apple" alt="API Shortcut" /></a>
   <img src="https://img.shields.io/badge/平台-Windows%20%7C%20iOS-blue" alt="Platform" />
   <img src="https://img.shields.io/badge/许可-MIT-orange" alt="License" />
@@ -26,7 +26,7 @@
 以前你需要：打开日历 → 点新建 → 逐字输入标题 → 选日期 → 设时间 → 填地点。
 
 现在你只需要：
-* **Windows 电脑**：鼠标划选文本按 `Ctrl + C` 复制，后台全静默自动入历！
+* **Windows 电脑**：复制日程文本后，按 `Ctrl + Alt + F11` 触发识别。托盘菜单支持自定义快捷键，也可改为复制时自动识别。
 * **iPhone 手机**：复制文本，**敲敲手机背面两下**，自动存入 iCloud 日历！
 
 ---
@@ -37,7 +37,7 @@
 - 🔍 **智能日历查重（防重复录入）**：录入前自动检索日历，若已存在同名日程，自动跳过并轻量提示，避免重复入历。
 - 📆 **全天与跨天自适应**：自动识别具体时段（14:00-15:00）或全天事件（生日、出差、节假日、截稿日），全天日程自动显示在顶部横幅。
 - 🕒 **精准相对时间推算**：以当前真实时分为基准，无论是“2小时后”、“半小时后”还是“明天下午”，都能精准对齐。
-- ⚡ **真正的 0% CPU 待机**：基于系统原生剪贴板事件驱动，只有在复制时才会响应，完全没有后台死循环轮询。
+- ⚡ **真正的 0% CPU 待机**：通过 Windows 全局快捷键或剪贴板事件触发，无需后台轮询。
 - 🚫 **黑白名单双重过滤**：命中“已取消/账单/密码/退款”等黑名单时直接前置忽略，杜绝误触。
 - 🆓 **永久免费使用**：提供免 API Key 版与大模型直连版，零使用门槛。
 
@@ -51,7 +51,7 @@ iOS 提供两种快捷指令方案，大家可根据喜好二选一：
 
 > 如果你手机上安装了字节跳动的「豆包」App，推荐直接用此版本：**完全无需注册开放平台、无需填写任何 API Key，点开即用！**
 
-👉 **[📲 点击一键添加：豆包免 Key 快捷指令](https://www.icloud.com/shortcuts/f373c1f401124733944dec192ecb513e)**
+👉 **[📲 点击一键添加：豆包免 Key 快捷指令](https://www.icloud.com/shortcuts/c8f09aa23c504964946a427d21ebb934)**
 
 1. 点击上方链接添加到快捷指令；
 2. 绑定快捷触发（见下方说明）；
@@ -94,7 +94,7 @@ iOS 提供两种快捷指令方案，大家可根据喜好二选一：
 3. 打开解压目录下的 `config.json`，把密钥粘贴进去：
    ```json
    {
-     "api_key": "这里填入你的API密钥",
+     "api_key": "",
      "api_url": "https://open.bigmodel.cn/api/paas/v4/chat/completions",
      "model": "glm-4-flash",
      "calendar_mode": "classic_outlook",
@@ -106,7 +106,7 @@ iOS 提供两种快捷指令方案，大家可根据喜好二选一：
 
 双击运行 **`SmartCalendar.exe`**。
 * 屏幕右下角任务栏会出现一个 📅 **日历小图标**；
-* 随便复制一句包含日程的话（例如：`明天上午10点开会` 或 `周五妈妈生日`）；
+* 复制一句包含日程的话（例如 `明天上午10点开会`），按默认快捷键 `Ctrl + Alt + F11` 开始识别；
 * 屏幕右下角弹出通知：`✅ 日程已静默添加`，日历里已经有该事件了！
 
 ---
@@ -115,6 +115,7 @@ iOS 提供两种快捷指令方案，大家可根据喜好二选一：
 
 | 配置项 | 默认值 | 说明 |
 |---|---|---|
+| `hotkey` | `"Ctrl + Alt + F11"` | 全局快捷键。省略此项时使用默认快捷键，设为 `null` 或 `""` 时复制即自动识别。 |
 | `api_key` | `""` | 你的大模型 API 密钥（推荐智谱开放平台免费申请） |
 | `api_url` | `https://open.bigmodel.cn/...` | OpenAI 格式的 Chat Completions 接口地址 |
 | `model` | `"glm-4-flash"` | 模型名称（推荐 `glm-4-flash`） |
@@ -131,7 +132,8 @@ iOS 提供两种快捷指令方案，大家可根据喜好二选一：
 
 右键点击右下角的 📅 托盘图标：
 - **✓ 开机自启动**：勾选后电脑开机自动在后台静默运行。
-- **⏸️ 暂停监听 / ▶️ 恢复监听**：需要频繁复制大量文本时可临时暂停。
+- **设置快捷键…**：可输入自定义组合键（如 `Ctrl + Shift + K`）、恢复默认，或清空快捷键并保存以恢复复制时自动识别。设置立即生效，重启后保留。
+- **⏸️ 暂停触发 / ▶️ 启用触发**：可临时关闭或恢复当前触发方式。
 - **⚙️ 打开配置文件**：快速调出 `config.json` 修改设置。
 - **🔄 重新加载配置**：改完配置点此刷新，无需重启软件。
 - **📝 查看运行日志**：查看历史识别记录与录入结果。
@@ -142,7 +144,7 @@ iOS 提供两种快捷指令方案，大家可根据喜好二选一：
 
 <details>
 <summary><strong>Q: 它是怎么做到不泄露隐私的？</strong></summary>
-程序内置了本地黑白名单双重预过滤：只有当复制的文本同时满足「包含时间/日期/日程词汇」且「不含黑名单词汇」时才会触发 AI 解析；平常复制的代码、密码、长篇文章或普通对话全部在本地直接静默忽略，绝不发起任何网络请求。
+程序内置了本地黑白名单双重预过滤：触发后，只有当剪贴板中的文本同时满足「包含时间/日期/日程词汇」且「不含黑名单词汇」时才会触发 AI 解析；平常复制的代码、密码、长篇文章或普通对话全部在本地直接静默忽略，绝不发起任何网络请求。
 </details>
 
 <details>

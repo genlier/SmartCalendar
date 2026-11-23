@@ -29,15 +29,15 @@ jobs:
         dotnet publish src/SmartCalendar.csproj -c Release -r win-x64 -p:PublishSingleFile=true -p:EnableCompressionInSingleFile=true --self-contained true -o dist/standalone
         Copy-Item config.example.json dist/standalone/config.json
         Remove-Item -Force dist/standalone/*.pdb -ErrorAction SilentlyContinue
-        Compress-Archive -Path dist/standalone/* -DestinationPath dist/SmartCalendar-v${{ github.ref_name }}-win-x64-standalone.zip
+        Compress-Archive -Path dist/standalone/* -DestinationPath dist/SmartCalendar-${{ github.ref_name }}-win-x64-standalone.zip
 
-    - name: Build Lightweight Version (180KB, Requires .NET 9)
+    - name: Build Lightweight Version (Requires .NET 9 Desktop Runtime)
       shell: pwsh
       run: |
         dotnet publish src/SmartCalendar.csproj -c Release -r win-x64 -p:PublishSingleFile=true --self-contained false -o dist/light
         Copy-Item config.example.json dist/light/config.json
         Remove-Item -Force dist/light/*.pdb -ErrorAction SilentlyContinue
-        Compress-Archive -Path dist/light/* -DestinationPath dist/SmartCalendar-v${{ github.ref_name }}-win-x64-light.zip
+        Compress-Archive -Path dist/light/* -DestinationPath dist/SmartCalendar-${{ github.ref_name }}-win-x64-light.zip
 
     - name: Publish GitHub Release
       uses: softprops/action-gh-release@v2
@@ -49,17 +49,20 @@ jobs:
         body: |
           ### 📅 SmartCalendar ${{ github.ref_name }} 发布日志
 
-          智能入历是一个原生的 Windows 轻量后台应用：复制日程文本即自动通过免费大模型（GLM-4-Flash）提取日程并静默存入 Outlook。
+          智能入历是一个原生的 Windows 轻量后台应用：复制日程文本后，默认按 Ctrl + Alt + F11 识别并添加至 Outlook。
 
           #### 📦 下载指南：
           - **`SmartCalendar-...-standalone.zip` (推荐)**：免安装独立版，内置运行库，任何 Win10/Win11 电脑开箱即用，解压即可运行。
-          - **`SmartCalendar-...-light.zip`**：超轻量版，主程序仅 180KB（需要电脑已安装 .NET 9 运行时）。
+          - **`SmartCalendar-...-light.zip`**：超轻量版，需要电脑已安装 .NET 9 Desktop Runtime。
 
           #### 🚀 使用步骤：
           1. 下载对应 `.zip` 压缩包并解压到任意文件夹。
           2. 打开 `config.json`，填入你的免费 [智谱 API Key](https://open.bigmodel.cn)。
           3. 双击运行 `SmartCalendar.exe`。
-          4. 右键托盘图标可一键开启「开机自启动」。
+          4. 复制日程文本后按 Ctrl + Alt + F11。右键托盘图标选择「设置快捷键」，可自定义、恢复默认，或清空后改为复制时自动识别。
+
+          #### 📱 iPhone 快捷指令
+          - [添加豆包版快捷指令](https://www.icloud.com/shortcuts/c8f09aa23c504964946a427d21ebb934)，通过豆包 App 解析文本，无需填写 API Key。
         files: |
           dist/SmartCalendar-*.zip
           config.example.json

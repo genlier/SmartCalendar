@@ -8,6 +8,7 @@ using System.Runtime.InteropServices;
 using System.Text;
 using System.Text.Encodings.Web;
 using System.Text.Json;
+using System.Text.Json.Nodes;
 using System.Text.Json.Serialization;
 using System.Text.RegularExpressions;
 using System.Threading;
@@ -48,6 +49,11 @@ static class Program
 
 public class AppConfig
 {
+    public const string DefaultHotkey = "Ctrl + Alt + F11";
+
+    [JsonPropertyName("hotkey")]
+    public string? Hotkey { get; set; } = DefaultHotkey;
+
     [JsonPropertyName("_help")]
     public string Help { get; set; } = "api_key: 在 https://open.bigmodel.cn 免费获取";
 
@@ -122,13 +128,23 @@ public class ClipboardAppContext : ApplicationContext
 {
     [DllImport("user32.dll", SetLastError = true)]
     [return: MarshalAs(UnmanagedType.Bool)]
+    private static extern bool RegisterHotKey(IntPtr hwnd, int id, uint modifiers, uint key);
+
+    [DllImport("user32.dll", SetLastError = true)]
+    [return: MarshalAs(UnmanagedType.Bool)]
+    private static extern bool UnregisterHotKey(IntPtr hwnd, int id);
+
+    [DllImport("user32.dll", SetLastError = true)]
+    [return: MarshalAs(UnmanagedType.Bool)]
     private static extern bool AddClipboardFormatListener(IntPtr hwnd);
 
     [DllImport("user32.dll", SetLastError = true)]
     [return: MarshalAs(UnmanagedType.Bool)]
     private static extern bool RemoveClipboardFormatListener(IntPtr hwnd);
 
+    private const int WM_HOTKEY = 0x0312;
     private const int WM_CLIPBOARDUPDATE = 0x031D;
+    private const uint ModNoRepeat = 0x4000;
     private const string RunRegistryKey = @"Software\Microsoft\Windows\CurrentVersion\Run";
     private const string AppRegistryName = "SmartCalendar";
 
@@ -141,9 +157,13 @@ public class ClipboardAppContext : ApplicationContext
 
     private AppConfig _config = new();
     private NotifyIcon _notifyIcon = null!;
+    private ToolStripMenuItem _titleItem = null!;
     private ToolStripMenuItem _toggleMenuItem = null!;
     private ToolStripMenuItem _autoStartMenuItem = null!;
-    private bool _isListening = true;
+    private bool _paused;
+    private bool _triggerActive;
+    private Hotkey? _activeHotkey;
+    private int _activeTriggerId;
     private string _lastProcessedText = "";
 
     public ClipboardAppContext()
@@ -162,13 +182,22 @@ public class ClipboardAppContext : ApplicationContext
             new Regex(@"[周星期][一二三四五六日天]", RegexOptions.Compiled),
         };
 
-        InitConfig();
         InitTrayIcon();
+        _msgForm = new MessageListenerForm(OnTriggered);
 
-        _msgForm = new MessageListenerForm(OnClipboardChanged);
-        AddClipboardFormatListener(_msgForm.Handle);
-
-        Log("🚀 智能入历已启动 (v1.4 - 支持全天日程与查重防重复)");
+        Log("🚀 智能入历已启动 (v1.6)");
+        try
+        {
+            _config = ReadConfig();
+            SetTrigger(Hotkey.Parse(_config.Hotkey), enabled: true);
+        }
+        catch (Exception ex)
+        {
+            UpdateTriggerUi();
+            ReportTriggerError(ex);
+            return;
+        }
+        UpdateTriggerUi();
 
         if (string.IsNullOrWhiteSpace(_config.ApiKey))
         {
@@ -176,17 +205,20 @@ public class ClipboardAppContext : ApplicationContext
         }
         else
         {
-            _notifyIcon.ShowBalloonTip(3000, "📅 智能入历 (全静默运行中)", "复制含日程的文本将自动识别并100%静默存入 Outlook！", ToolTipIcon.Info);
+            string instructions = _activeHotkey is { } hotkey
+                ? $"复制日程文本后，按 {hotkey.Label} 添加到 Outlook。"
+                : "复制日程文本后，将自动识别并添加到 Outlook。";
+            _notifyIcon.ShowBalloonTip(3000, "📅 智能入历", instructions, ToolTipIcon.Info);
         }
     }
 
     private class MessageListenerForm : Form
     {
-        private readonly Action _onClipboardChanged;
+        private readonly Action<int> _onTriggered;
 
-        public MessageListenerForm(Action onClipboardChanged)
+        public MessageListenerForm(Action<int> onTriggered)
         {
-            _onClipboardChanged = onClipboardChanged;
+            _onTriggered = onTriggered;
             FormBorderStyle = FormBorderStyle.None;
             WindowState = FormWindowState.Minimized;
             ShowInTaskbar = false;
@@ -196,47 +228,47 @@ public class ClipboardAppContext : ApplicationContext
 
         protected override void WndProc(ref Message m)
         {
+            if (m.Msg == WM_HOTKEY)
+            {
+                _onTriggered(m.WParam.ToInt32());
+                return;
+            }
             if (m.Msg == WM_CLIPBOARDUPDATE)
             {
-                _onClipboardChanged();
+                _onTriggered(0);
+                return;
             }
             base.WndProc(ref m);
         }
     }
 
-    private void InitConfig()
+    private static readonly JsonSerializerOptions ConfigJsonOptions = new()
     {
-        try
-        {
-            if (!File.Exists(_configPath))
-            {
-                var options = new JsonSerializerOptions { WriteIndented = true, Encoder = JavaScriptEncoder.UnsafeRelaxedJsonEscaping };
-                File.WriteAllText(_configPath, JsonSerializer.Serialize(_config, options), Encoding.UTF8);
-            }
-            else
-            {
-                string json = File.ReadAllText(_configPath, Encoding.UTF8);
-                var loaded = JsonSerializer.Deserialize<AppConfig>(json);
-                if (loaded != null)
-                {
-                    _config = loaded;
-                }
-            }
-        }
-        catch (Exception ex)
-        {
-            Log($"读取配置失败: {ex.Message}");
-        }
+        WriteIndented = true,
+        Encoder = JavaScriptEncoder.UnsafeRelaxedJsonEscaping
+    };
+
+    private AppConfig ReadConfig()
+    {
+        if (!File.Exists(_configPath)) WriteNewConfig();
+        return JsonSerializer.Deserialize<AppConfig>(File.ReadAllText(_configPath, Encoding.UTF8))
+            ?? throw new InvalidDataException("配置文件应包含一个 JSON 对象。");
+    }
+
+    private void WriteNewConfig()
+    {
+        File.WriteAllText(_configPath, JsonSerializer.Serialize(_config, ConfigJsonOptions), Encoding.UTF8);
     }
 
     private void InitTrayIcon()
     {
         var contextMenu = new ContextMenuStrip();
 
-        var titleItem = new ToolStripMenuItem("📅 智能入历 (v1.4)") { Enabled = false };
-        titleItem.Font = new Font(titleItem.Font, FontStyle.Bold);
+        _titleItem = new ToolStripMenuItem("📅 智能入历") { Enabled = false };
+        _titleItem.Font = new Font(_titleItem.Font, FontStyle.Bold);
 
-        _toggleMenuItem = new ToolStripMenuItem("⏸️ 暂停监听", null, (s, e) => ToggleListening());
+        _toggleMenuItem = new ToolStripMenuItem("▶️ 启用触发", null, (s, e) => ToggleTrigger());
+        var shortcutItem = new ToolStripMenuItem("设置快捷键…", null, (s, e) => EditHotkey());
         
         bool isAutoStart = IsAutoStartEnabled();
         _autoStartMenuItem = new ToolStripMenuItem(isAutoStart ? "✓ 开机自启动" : "  开机自启动", null, (s, e) => ToggleAutoStart())
@@ -249,9 +281,10 @@ public class ClipboardAppContext : ApplicationContext
         var openLogItem = new ToolStripMenuItem("📝 查看运行日志", null, (s, e) => OpenLog());
         var exitItem = new ToolStripMenuItem("❌ 退出程序", null, (s, e) => ExitApp());
 
-        contextMenu.Items.Add(titleItem);
+        contextMenu.Items.Add(_titleItem);
         contextMenu.Items.Add(new ToolStripSeparator());
         contextMenu.Items.Add(_toggleMenuItem);
+        contextMenu.Items.Add(shortcutItem);
         contextMenu.Items.Add(_autoStartMenuItem);
         contextMenu.Items.Add(new ToolStripSeparator());
         contextMenu.Items.Add(openConfigItem);
@@ -263,7 +296,7 @@ public class ClipboardAppContext : ApplicationContext
         _notifyIcon = new NotifyIcon
         {
             Icon = CreateCalendarIcon(),
-            Text = "📅 智能入历 - 复制即静默入历",
+            Text = "📅 智能入历",
             ContextMenuStrip = contextMenu,
             Visible = true
         };
@@ -342,22 +375,114 @@ public class ClipboardAppContext : ApplicationContext
         return Icon.FromHandle(bmp.GetHicon());
     }
 
-    private void ToggleListening()
+    private void SetTrigger(Hotkey? hotkey, bool enabled)
     {
-        _isListening = !_isListening;
-        if (_isListening)
+        if (_triggerActive == enabled && (!enabled || _activeHotkey == hotkey)) return;
+
+        IntPtr handle = _msgForm.Handle;
+        int nextId = 0;
+        if (enabled)
         {
-            _toggleMenuItem.Text = "⏸️ 暂停监听";
-            _notifyIcon.Text = "📅 智能入历 - 运行中";
-            _notifyIcon.ShowBalloonTip(2000, "智能入历", "已恢复剪贴板监听 ▶", ToolTipIcon.Info);
-            Log("已恢复剪贴板监听");
+            if (hotkey is { } shortcut)
+            {
+                nextId = _activeTriggerId == 1 ? 2 : 1;
+                if (!RegisterHotKey(handle, nextId, shortcut.Modifiers | ModNoRepeat, (uint)shortcut.Key))
+                {
+                    int error = Marshal.GetLastWin32Error();
+                    string message = error == 1409 ? "已被占用，请换一组按键。" : $"注册失败（Windows 错误 {error}）。";
+                    throw new InvalidOperationException($"{shortcut.Label} {message}");
+                }
+            }
+            else if (!AddClipboardFormatListener(handle))
+            {
+                throw new InvalidOperationException($"无法启用复制触发（Windows 错误 {Marshal.GetLastWin32Error()}）。");
+            }
         }
-        else
+
+        if (_triggerActive && !RemoveTrigger(handle, _activeTriggerId))
         {
-            _toggleMenuItem.Text = "▶️ 恢复监听";
-            _notifyIcon.Text = "📅 智能入历 - 已暂停";
-            _notifyIcon.ShowBalloonTip(2000, "智能入历", "已暂停剪贴板监听 ⏸", ToolTipIcon.Warning);
-            Log("已暂停剪贴板监听");
+            int error = Marshal.GetLastWin32Error();
+            if (enabled) RemoveTrigger(handle, nextId);
+            throw new InvalidOperationException($"无法停用当前触发（Windows 错误 {error}）。");
+        }
+
+        _triggerActive = enabled;
+        _activeHotkey = enabled ? hotkey : null;
+        _activeTriggerId = nextId;
+        Log(!enabled ? "触发已暂停" : hotkey is { } active ? $"快捷键已启用: {active.Label}" : "复制时自动识别已启用");
+    }
+
+    private static bool RemoveTrigger(IntPtr handle, int id)
+    {
+        return id == 0 ? RemoveClipboardFormatListener(handle) : UnregisterHotKey(handle, id);
+    }
+
+    private void UpdateTriggerUi()
+    {
+        string mode = _triggerActive
+            ? _activeHotkey?.Label ?? "复制时自动识别"
+            : _paused ? "触发已暂停" : "触发未启用";
+        _titleItem.Text = $"📅 智能入历 · {mode}";
+        _notifyIcon.Text = $"📅 智能入历 - {mode}";
+        _toggleMenuItem.Text = _triggerActive ? "⏸️ 暂停触发" : "▶️ 启用触发";
+    }
+
+    private void ReportTriggerError(Exception ex)
+    {
+        Log($"触发设置失败: {ex.Message}");
+        _notifyIcon.ShowBalloonTip(5000, "触发设置失败", ex.Message, ToolTipIcon.Error);
+    }
+
+    private void ToggleTrigger()
+    {
+        try
+        {
+            bool enabled = !_triggerActive;
+            SetTrigger(enabled ? Hotkey.Parse(_config.Hotkey) : null, enabled);
+            _paused = !enabled;
+            UpdateTriggerUi();
+        }
+        catch (Exception ex)
+        {
+            ReportTriggerError(ex);
+        }
+    }
+
+    private void EditHotkey()
+    {
+        using var dialog = new HotkeySettingsForm(_config.Hotkey, SaveHotkey);
+        dialog.ShowDialog();
+    }
+
+    private void SaveHotkey(Hotkey? hotkey)
+    {
+        if (!File.Exists(_configPath)) WriteNewConfig();
+        var current = JsonNode.Parse(File.ReadAllText(_configPath, Encoding.UTF8))?.AsObject()
+            ?? throw new InvalidDataException("配置文件应包含一个 JSON 对象。");
+        current["hotkey"] = hotkey?.Label;
+
+        string temporary = _configPath + "." + Guid.NewGuid().ToString("N") + ".tmp";
+        bool wasActive = _triggerActive;
+        Hotkey? previousHotkey = _activeHotkey;
+        try
+        {
+            File.WriteAllText(temporary, current.ToJsonString(ConfigJsonOptions), Encoding.UTF8);
+            SetTrigger(hotkey, !_paused);
+            try
+            {
+                File.Replace(temporary, _configPath, null);
+            }
+            catch
+            {
+                SetTrigger(previousHotkey, wasActive);
+                throw;
+            }
+            _config.Hotkey = hotkey?.Label;
+        }
+        finally
+        {
+            if (File.Exists(temporary)) File.Delete(temporary);
+            UpdateTriggerUi();
         }
     }
 
@@ -365,7 +490,7 @@ public class ClipboardAppContext : ApplicationContext
     {
         try
         {
-            if (!File.Exists(_configPath)) InitConfig();
+            if (!File.Exists(_configPath)) WriteNewConfig();
             Process.Start(new ProcessStartInfo("notepad.exe", _configPath) { UseShellExecute = true });
         }
         catch (Exception ex)
@@ -389,17 +514,27 @@ public class ClipboardAppContext : ApplicationContext
 
     private void ReloadConfig()
     {
-        InitConfig();
-        _notifyIcon.ShowBalloonTip(2000, "智能入历", "配置已重新加载 ✅", ToolTipIcon.Info);
-        Log("用户手动重新加载配置");
+        try
+        {
+            AppConfig updated = ReadConfig();
+            SetTrigger(Hotkey.Parse(updated.Hotkey), !_paused);
+            _config = updated;
+            UpdateTriggerUi();
+            _notifyIcon.ShowBalloonTip(2000, "智能入历", "配置已重新加载 ✅", ToolTipIcon.Info);
+            Log("用户手动重新加载配置");
+        }
+        catch (Exception ex)
+        {
+            ReportTriggerError(ex);
+        }
     }
 
     private void ExitApp()
     {
         try
         {
-            RemoveClipboardFormatListener(_msgForm.Handle);
-            _msgForm.Close();
+            if (_triggerActive) RemoveTrigger(_msgForm.Handle, _activeTriggerId);
+            _msgForm.Dispose();
         }
         catch { }
 
@@ -408,9 +543,9 @@ public class ClipboardAppContext : ApplicationContext
         ExitThread();
     }
 
-    private void OnClipboardChanged()
+    private void OnTriggered(int id)
     {
-        if (!_isListening) return;
+        if (!_triggerActive || id != _activeTriggerId) return;
 
         string? text = GetClipboardTextSafe();
         if (string.IsNullOrWhiteSpace(text)) return;
